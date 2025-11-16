@@ -1,0 +1,22 @@
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 其他
+*.log
+.env
+
+temp.*
+
+poe_api_wrapper/
+
+.VSCodeCounter/
+
+prompt.md
+midterm-report.*
