@@ -4,9 +4,14 @@ from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .api.v1 import api_router
 from .database import engine, Base
+from .models import (
+    User, Student, Teacher, Parent, Admin,
+    Exercise, Question,
+    Conversation, ConversationParticipant, Message, MessageReceipt
+)  # 确保消息相关表注册到元数据
 from .services import AIServiceManager
 
-# 创建数据库表
+# 创建数据库表（确保所有模型已导入后再执行）
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(

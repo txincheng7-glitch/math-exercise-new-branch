@@ -1,13 +1,18 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Fragment } from 'react';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
-import { UserIcon, BellIcon } from '@heroicons/react/24/outline';
+import { UserIcon, BellIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
+import { fetchUnreadCount, connectMessageSocket } from '../../api/messages';
+import MessagesPopover from '../messages/MessagesPopover';
 import { useAuth } from '../../contexts/AuthContext';
 import { UserRole } from '../../api/types';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  const [showMessages, setShowMessages] = useState<boolean>(false);
+  const [unreadCount, setUnreadCount] = useState<number>(0);
+  const wsRef = useRef<WebSocket | null>(null);
 
   // 根据用户角色获取导航项
   const getNavigationItems = () => {
@@ -46,6 +51,44 @@ const Navbar = () => {
 
   const navigation = getNavigationItems();
 
+  // 初始与轮询获取未读数量 + WebSocket实时刷新
+  useEffect(() => {
+    let interval: NodeJS.Timer;
+    const loadUnread = async () => {
+      try {
+        const data = await fetchUnreadCount();
+        setUnreadCount(data.unread_count);
+      } catch (err) {
+        // 可添加toast，这里保持静默
+        console.error('获取未读消息失败', err);
+      }
+    };
+    loadUnread();
+    interval = setInterval(loadUnread, 30000);
+    wsRef.current = connectMessageSocket(() => {
+      // 收到任何新消息时刷新未读
+      loadUnread();
+    });
+    return () => {
+      clearInterval(interval);
+      if (wsRef.current) wsRef.current.close();
+    };
+  }, []);
+
+  // 关闭弹窗后刷新未读（用户可能已阅读）
+  useEffect(() => {
+    if (!showMessages) {
+      (async () => {
+        try {
+          const data = await fetchUnreadCount();
+          setUnreadCount(data.unread_count);
+        } catch (err) {
+          console.error('刷新未读失败', err);
+        }
+      })();
+    }
+  }, [showMessages]);
+
   return (
     <Disclosure as="nav" className="bg-white shadow">
       {({ open }) => (
@@ -71,15 +114,28 @@ const Navbar = () => {
                 </div>
               </div>
 
-              <div className="hidden sm:ml-6 sm:flex sm:items-center">
-                {/* 通知按钮 */}
-                <button
-                  type="button"
-                  className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-                >
-                  <span className="sr-only">查看通知</span>
-                  <BellIcon className="h-6 w-6" aria-hidden="true" />
-                </button>
+              <div className="hidden sm:ml-6 sm:flex sm:items-center relative">
+                {/* 消息弹窗触发按钮 */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setShowMessages((v) => !v)}
+                    className="p-1 rounded-full text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 relative"
+                  >
+                    <span className="sr-only">查看消息</span>
+                    <EnvelopeIcon className="h-6 w-6" aria-hidden="true" />
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-red-600 text-white min-w-[18px] leading-none">
+                        {unreadCount > 99 ? '99+' : unreadCount}
+                      </span>
+                    )}
+                  </button>
+                  {showMessages && (
+                    <div className="absolute right-0 z-50">
+                      <MessagesPopover open={showMessages} onClose={() => setShowMessages(false)} />
+                    </div>
+                  )}
+                </div>
 
                 {/* 用户菜单 */}
                 <Menu as="div" className="ml-3 relative">

@@ -35,6 +35,7 @@ import ParentAnalytics from './pages/parent/ParentAnalytics';
 // 管理员页面
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentProgress from './pages/common/StudentProgress';
+import MessagesPage from './pages/Messages';
 
 const queryClient = new QueryClient();
 
@@ -201,6 +202,14 @@ const App = () => {
                 element={
                   <ProtectedRoute>
                     <Profile />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="messages"
+                element={
+                  <ProtectedRoute>
+                    <MessagesPage />
                   </ProtectedRoute>
                 }
               />

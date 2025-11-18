@@ -13,6 +13,12 @@
 
 from .user import User, Student, Teacher, Parent, Admin, UserRole  # 导入用户相关模型和角色枚举
 from .exercise import Exercise, Question, DifficultyLevel, OperatorType  # 导入练习相关模型和枚举
+from .message import (
+  Conversation,
+  ConversationParticipant,
+  Message,
+  MessageReceipt,
+)  # 导入消息系统模型
 
 # 定义此模块的公开接口
 __all__ = [
@@ -29,4 +35,10 @@ __all__ = [
     "Question",          # 题目模型
     "DifficultyLevel",   # 难度等级枚举（简单、中等、困难）
     "OperatorType"       # 运算符类型枚举（加、减、乘、除）
+    ,
+    # 消息相关模型
+    "Conversation",
+    "ConversationParticipant",
+    "Message",
+    "MessageReceipt"
 ]

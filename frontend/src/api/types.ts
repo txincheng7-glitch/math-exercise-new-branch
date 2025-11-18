@@ -120,6 +120,53 @@ export interface WrongStats {
   trend_14d: Array<{ date: string; count: number }>; 
 }
 
+// 消息系统类型（v1 一对一私信）
+export interface Message {
+  id: number;
+  conversation_id: number;
+  sender_id: number;
+  content: string;
+  created_at: string;
+}
+
+export interface ConversationSummary {
+  id: number;
+  participant_user_ids: number[];
+  last_message?: Message;
+  unread_count: number;
+  created_at: string;
+  participant_users?: { id: number; username: string; role: string }[];
+}
+
+export interface ConversationMessagesResponse {
+  conversation_id: number;
+  messages: Message[];
+  total: number;
+  has_more: boolean;
+}
+
+export interface UnreadCountResponse {
+  unread_count: number;
+}
+
+// 可选收件人
+export interface AvailableRecipientUser {
+  id: number;
+  username: string;
+  role: string;
+  relation_tags?: string[];
+}
+
+export interface AvailableRecipientCategory {
+  key: string;
+  label: string;
+  users: AvailableRecipientUser[];
+}
+
+export interface AvailableRecipientsResponse {
+  categories: AvailableRecipientCategory[];
+}
+
 // 学生进度（教师或家长查看）
 export interface StudentProgress {
   total_exercises: number;
