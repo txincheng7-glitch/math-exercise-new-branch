@@ -36,6 +36,7 @@ import ParentAnalytics from './pages/parent/ParentAnalytics';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import StudentProgress from './pages/common/StudentProgress';
 import MessagesPage from './pages/Messages';
+import AgentWidget from './components/agent/AgentWidget'; // 1. 导入组件
 
 const queryClient = new QueryClient();
 
@@ -45,12 +46,19 @@ const DefaultRedirect = () => {
   return <Navigate to={getDefaultRoute(user?.role)} replace />;
 };
 
+// 2. 创建一个包装组件，用于根据认证状态显示挂件
+const AppAgentWidget = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <AgentWidget /> : null;
+};
+
 const App = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
         <AuthProvider>
         <Toaster position="top-right" />  {/* 添加这一行 */}
+        <AppAgentWidget /> {/* 3. 在这里添加挂件 */}
           <Routes>
             {/* 公共路由 */}
             <Route path="/login" element={<Login />} />

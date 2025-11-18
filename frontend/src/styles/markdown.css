@@ -68,3 +68,17 @@
   border-radius: 0.25rem;
   font-size: 0.875em;
 }
+
+/* 聊天气泡：避免中文逐字换行，保持整体显示；同时允许英文长词断行不溢出 */
+.chat-bubble {
+  word-break: keep-all; /* 不在任意字符间断开（适用于中文“测试”不分行） */
+  overflow-wrap: break-word; /* 英文或长 URL 可在必要时断行 */
+  white-space: normal;
+}
+.chat-bubble p,
+.chat-bubble article,
+.chat-bubble code,
+.chat-bubble li {
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
