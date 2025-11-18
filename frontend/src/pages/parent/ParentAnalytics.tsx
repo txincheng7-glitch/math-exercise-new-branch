@@ -18,6 +18,8 @@ import {
 const COLORS = ['#6366F1', '#06B6D4', '#F59E0B', '#10B981', '#EF4444', '#A78BFA', '#22C55E'];
 
 const ParentAnalytics: React.FC = () => {
+  const BAR_SIZE = 28;
+  const SINGLE_PADDING = 72; // 单条数据时左右留白，确保视觉居中且不贴边
   // 家长汇总统计（只拉这个端点，避免多请求）
   const { data: stats, isLoading, isError } = useQuery({
     queryKey: ['parent-stats'],
@@ -33,11 +35,13 @@ const ParentAnalytics: React.FC = () => {
   const avgScoreData = useMemo(() => {
     return childrenStats.map((c: any) => ({ name: c.name || `学生${c.id}`, 平均分: Number(c.average_score || 0) }));
   }, [childrenStats]);
+  const isSingleAvg = avgScoreData.length === 1;
 
   // 子女总练习柱状图数据
   const totalExercisesData = useMemo(() => {
     return childrenStats.map((c: any) => ({ name: c.name || `学生${c.id}`, 练习总数: Number(c.total_exercises || 0) }));
   }, [childrenStats]);
+  const isSingleTotal = totalExercisesData.length === 1;
 
   // 今日练习占比饼图
   const todayPieData = useMemo(() => {
@@ -80,13 +84,13 @@ const ParentAnalytics: React.FC = () => {
         <div style={{ width: '100%', height: 300 }}>
           {avgScoreData.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={avgScoreData} margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+              <BarChart data={avgScoreData} margin={{ top: 10, right: 20, bottom: 10, left: -10 }} barCategoryGap={isSingleAvg ? '30%' : '20%'}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickMargin={6} padding={isSingleAvg ? { left: SINGLE_PADDING, right: SINGLE_PADDING } : { left: 0, right: 0 }} />
                 <YAxis domain={[0, 100]} tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="平均分" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="平均分" fill="#6366F1" radius={[4, 4, 0, 0]} barSize={BAR_SIZE} />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -101,13 +105,13 @@ const ParentAnalytics: React.FC = () => {
         <div style={{ width: '100%', height: 300 }}>
           {totalExercisesData.length ? (
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={totalExercisesData} margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+              <BarChart data={totalExercisesData} margin={{ top: 10, right: 20, bottom: 10, left: -10 }} barCategoryGap={isSingleTotal ? '30%' : '20%'}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} tickMargin={6} padding={isSingleTotal ? { left: SINGLE_PADDING, right: SINGLE_PADDING } : { left: 0, right: 0 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                 <Tooltip />
                 <Legend />
-                <Bar dataKey="练习总数" fill="#06B6D4" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="练习总数" fill="#06B6D4" radius={[4, 4, 0, 0]} barSize={BAR_SIZE} />
               </BarChart>
             </ResponsiveContainer>
           ) : (

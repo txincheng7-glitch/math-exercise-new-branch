@@ -11,7 +11,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend, BarChart, Ba
 const ExerciseStatsPage: React.FC = () => {
   const { user } = useAuth();
   const [range, setRange] = useState<number>(14); // 7/14/30 天过滤（用于趋势与近期练习类可视化）
-  const [heatmapMode, setHeatmapMode] = useState<'hour'|'segment'>('segment'); // segment: 分段(4h一组) hour: 24小时
+  const [heatmapMode, setHeatmapMode] = useState<'hour'|'segment'|'calendar'>('segment'); // segment: 分段(4h一组) hour: 24小时 calendar: 按日期
 
   /**
    * 学生端：直接使用 /exercises/stats
@@ -68,6 +68,60 @@ const ExerciseStatsPage: React.FC = () => {
       return dd >= cutoff && dd <= now;
     });
   }, [isStudent, recentAll, range]);
+
+  // 日历热力图数据（按日期统计，显示最近 range 天，按周列对齐）
+  const calendarHeatmap = useMemo(() => {
+    if (isStudent) return { weeks: [] as Array<Array<{ date: string | null; count: number }>>, max: 0, monthLabels: [] as string[] };
+    // 统计每天次数
+    const countMap = new Map<string, number>();
+    for (const r of filteredRecent) {
+      const d = new Date(r.date);
+      if (isNaN(d.getTime())) continue;
+      const key = d.toISOString().slice(0, 10);
+      countMap.set(key, (countMap.get(key) || 0) + 1);
+    }
+    const now = new Date();
+    const end = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const start = new Date(end.getTime() - (range - 1) * 24 * 60 * 60 * 1000);
+    // 对齐到周：从 start 的周日开始到 end 的周六结束（以周日为一周起点）
+    const startDay = start.getDay(); // 0-6 (周日-周六)
+    const alignedStart = new Date(start);
+    alignedStart.setDate(start.getDate() - startDay);
+    const endDay = end.getDay();
+    const alignedEnd = new Date(end);
+    alignedEnd.setDate(end.getDate() + (6 - endDay));
+
+    // 生成每一天并按周分组
+    const weeks: Array<Array<{ date: string | null; count: number }>> = [];
+    const monthLabels: string[] = [];
+    let cur = new Date(alignedStart);
+    let max = 0;
+    while (cur <= alignedEnd) {
+      const week: Array<{ date: string | null; count: number }> = [];
+      for (let i = 0; i < 7; i++) {
+        const key = cur.toISOString().slice(0, 10);
+        // 超出原始 range 的补齐日期显示为空（但保留占位以对齐周）
+        const inRange = cur >= start && cur <= end;
+        const count = inRange ? (countMap.get(key) || 0) : 0;
+        if (count > max) max = count;
+        week.push({ date: inRange ? key : null, count });
+        cur.setDate(cur.getDate() + 1);
+      }
+      weeks.push(week);
+    }
+    // 顶部月份标签：每列（周）取该周内第一天的月份作为标签变化点
+    for (const w of weeks) {
+      const first = w.find((c) => c.date !== null);
+      if (!first || !first.date) { monthLabels.push(''); continue; }
+      const m = new Date(first.date + 'T00:00:00');
+      monthLabels.push(`${m.getMonth() + 1}月`);
+    }
+    // 相邻相同月份不重复显示，增强可读性
+    for (let i = 1; i < monthLabels.length; i++) {
+      if (monthLabels[i] === monthLabels[i - 1]) monthLabels[i] = '';
+    }
+    return { weeks, max, monthLabels };
+  }, [filteredRecent, isStudent, range]);
 
   // 构建分数直方图（0-59, 60-69, 70-79, 80-89, 90-100）
   const scoreHistogram = useMemo(() => {
@@ -249,9 +303,14 @@ const ExerciseStatsPage: React.FC = () => {
                   className={`px-2 py-0.5 rounded border text-xs ${heatmapMode==='hour'?'bg-indigo-600 text-white':'bg-white'}`}
                   onClick={() => setHeatmapMode('hour')}
                 >24小时</button>
+                <button
+                  className={`px-2 py-0.5 rounded border text-xs ${heatmapMode==='calendar'?'bg-indigo-600 text-white':'bg-white'}`}
+                  onClick={() => setHeatmapMode('calendar')}
+                >按日期</button>
                 <span className="ml-auto text-gray-400">活动次数: 深色=更多</span>
               </div>
-              {heatmapData.max > 0 ? (
+              {heatmapMode !== 'calendar' ? (
+                heatmapData.max > 0 ? (
                 <div className="overflow-x-auto">
                   <table className="min-w-full border-collapse" style={{ tableLayout: 'fixed' }}>
                     <thead>
@@ -298,6 +357,62 @@ const ExerciseStatsPage: React.FC = () => {
                 </div>
               ) : (
                 <div className="text-sm text-gray-500">暂无活动数据</div>
+              )) : (
+                // 日历热力图（按日期）
+                calendarHeatmap.weeks.length > 0 ? (
+                  <div className="overflow-x-auto">
+                    <div className="inline-block">
+                      <div className="flex items-center mb-1 text-xs text-gray-500">
+                        {calendarHeatmap.monthLabels.map((m, idx) => (
+                          <div key={idx} className="text-center" style={{ width: 14, marginLeft: idx===0?28:2 }}>{m}</div>
+                        ))}
+                      </div>
+                      <div className="flex">
+                        {/* 星期标签列 */}
+                        <div className="flex flex-col mr-2">
+                          {['日','二','四','六'].map((d) => (
+                            <div key={d} className="text-[10px] text-gray-500" style={{ height: 12, lineHeight: '12px' }}>{d}</div>
+                          ))}
+                        </div>
+                        {/* 周列 */}
+                        <div className="flex">
+                          {calendarHeatmap.weeks.map((week, wIdx) => (
+                            <div key={wIdx} className="flex flex-col mr-0.5">
+                              {week.map((cell, dIdx) => {
+                                const ratio = calendarHeatmap.max ? cell.count / calendarHeatmap.max : 0;
+                                const bg = cell.date ? `rgba(99,102,241,${ratio===0?0.06:0.18+ratio*0.72})` : 'transparent';
+                                // 仅渲染周中偶数行标签（上方已有月份标签）
+                                return (
+                                  <div key={dIdx} className="mb-0.5" style={{ width: 12, height: 12 }}>
+                                    <div
+                                      className="w-3 h-3 rounded-sm"
+                                      style={{ backgroundColor: bg, width: 12, height: 12 }}
+                                      title={cell.date ? `${cell.date}：${cell.count} 次练习` : ''}
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {/* 图例 */}
+                      <div className="mt-2 flex items-center gap-2 text-xs text-gray-500">
+                        <span>图例:</span>
+                        <div className="flex items-center gap-1">
+                          {Array.from({ length: 6 }).map((_, i) => {
+                            const r = (i+1)/6;
+                            const c = `rgba(99,102,241,${0.18 + r*0.72})`;
+                            return <div key={i} className="w-6 h-3 rounded-sm" style={{ backgroundColor: c }} />;
+                          })}
+                        </div>
+                        <span>少 → 多</span>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">暂无活动数据</div>
+                )
               )}
             </>
           ) : (

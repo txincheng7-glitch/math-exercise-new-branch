@@ -126,12 +126,21 @@ export const teacherAPI = {
         weight += comp;
       }
 
-      // 聚合 score_history（日期 -> 平均分）
+      // 聚合分数历史（日期 -> 平均分）
+      // 1) 优先使用 score_history
       for (const item of prog?.score_history || []) {
         const parsed = new Date(item.date);
         const dateKey = isNaN(parsed.getTime()) ? String(item.date).replace(/T.*$/, '') : parsed.toISOString().slice(0, 10);
         if (!historyMap[dateKey]) historyMap[dateKey] = { sum: 0, count: 0 };
         historyMap[dateKey].sum += item.score || 0;
+        historyMap[dateKey].count += 1;
+      }
+      // 2) 若后端未提供 score_history，则从 recent_exercises 回退聚合
+      for (const ex of prog?.recent_exercises || []) {
+        const parsed = new Date(ex.date);
+        const dateKey = isNaN(parsed.getTime()) ? String(ex.date).replace(/T.*$/, '') : parsed.toISOString().slice(0, 10);
+        if (!historyMap[dateKey]) historyMap[dateKey] = { sum: 0, count: 0 };
+        historyMap[dateKey].sum += ex.score || 0;
         historyMap[dateKey].count += 1;
       }
     }

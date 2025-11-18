@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Fragment } from 'react';
 import { Disclosure, Menu, Transition } from '@headlessui/react';
 import { UserIcon, BellIcon, EnvelopeIcon } from '@heroicons/react/24/outline';
@@ -50,6 +50,7 @@ const Navbar = () => {
   };
 
   const navigation = getNavigationItems();
+  const location = useLocation();
 
   // 初始与轮询获取未读数量 + WebSocket实时刷新
   useEffect(() => {
@@ -101,16 +102,44 @@ const Navbar = () => {
                     数学练习系统
                   </Link>
                 </div>
-                <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                  {navigation.map((item) => (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-500 hover:text-gray-900"
-                    >
-                      {item.name}
-                    </Link>
-                  ))}
+                <div className="hidden sm:ml-6 sm:flex sm:space-x-6">
+                  {navigation.map((item) => {
+                    // 精准高亮：
+                    // - 若导航项包含查询参数，则要求 pathname 完全相等且该查询参数匹配
+                    // - 否则使用 startsWith 以适配子路由
+                    let isActive = false;
+                    try {
+                      const hrefUrl = new URL(item.href, window.location.origin);
+                      if (hrefUrl.search) {
+                        if (location.pathname === hrefUrl.pathname) {
+                          const current = new URLSearchParams(location.search);
+                          let match = true;
+                          hrefUrl.searchParams.forEach((v, k) => {
+                            if (current.get(k) !== v) match = false;
+                          });
+                          isActive = match;
+                        }
+                      } else {
+                        isActive = location.pathname.startsWith(hrefUrl.pathname);
+                      }
+                    } catch {
+                      const hrefPath = item.href.split('?')[0];
+                      isActive = location.pathname.startsWith(hrefPath);
+                    }
+                    const base = 'inline-flex items-center px-2 pt-1 pb-1 text-sm font-medium border-b-2 transition-colors duration-150';
+                    const activeCls = 'text-indigo-600 border-indigo-600';
+                    const inactiveCls = 'text-gray-500 border-transparent hover:text-gray-700 hover:border-gray-300';
+                    return (
+                      <Link
+                        key={item.name}
+                        to={item.href}
+                        aria-current={isActive ? 'page' : undefined}
+                        className={`${base} ${isActive ? activeCls : inactiveCls}`}
+                      >
+                        {item.name}
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
 

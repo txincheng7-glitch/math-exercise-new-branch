@@ -133,6 +133,10 @@ const AnalyticsPanel: React.FC<Props> = ({ active = true }) => {
       .slice(0, 12)
       .map(([grade, count]) => ({ grade, 学生数: count }));
   }, [students]);
+  const isSingleGrade = gradeBarData.length === 1;
+  const isFewGrades = gradeBarData.length > 1 && gradeBarData.length <= 3;
+  const BAR_SIZE = 28;
+  const SINGLE_PADDING = 72;
 
   return (
     <div className="space-y-6">
@@ -240,12 +244,21 @@ const AnalyticsPanel: React.FC<Props> = ({ active = true }) => {
           <div style={{ width: '100%', height: 280 }}>
             {gradeBarData.length ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={gradeBarData} margin={{ top: 10, right: 20, bottom: 10, left: -10 }}>
+                <BarChart
+                  data={gradeBarData}
+                  margin={{ top: 10, right: 20, bottom: 10, left: -10 }}
+                  barCategoryGap={isSingleGrade || isFewGrades ? '30%' : '20%'}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="grade" tick={{ fontSize: 12 }} />
+                  <XAxis
+                    dataKey="grade"
+                    tick={{ fontSize: 12 }}
+                    tickMargin={6}
+                    padding={isSingleGrade ? { left: SINGLE_PADDING, right: SINGLE_PADDING } : isFewGrades ? { left: 36, right: 36 } : { left: 0, right: 0 }}
+                  />
                   <YAxis allowDecimals={false} tick={{ fontSize: 12 }} />
                   <Tooltip />
-                  <Bar dataKey="学生数" fill="#6366F1" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="学生数" fill="#6366F1" radius={[4, 4, 0, 0]} barSize={BAR_SIZE} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
