@@ -306,27 +306,3 @@ export const ai = {
   },
 };
 
-
-
-export const agent = {
-  // 删掉原来的 chatStream 函数
-  
-  // 新增 chat 函数
-  chat: async (
-    payload: {
-      message: string;
-      chat_history?: { role: string; content: string }[];
-      bot_name?: string;
-    },
-    signal: AbortSignal
-  ): Promise<string> => {
-    try {
-      const response = await api.post('/agent/chat', payload, { signal });
-      // 后端返回的数据结构是 { "response": "..." }
-      return response.data.response;
-    } catch (error) {
-      // Axios 会自动处理错误，这里让它继续抛出
-      throw error;
-    }
-  },
-};

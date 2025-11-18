@@ -160,9 +160,7 @@ const Navbar = () => {
                     )}
                   </button>
                   {showMessages && (
-                    <div className="absolute right-0 z-50">
-                      <MessagesPopover open={showMessages} onClose={() => setShowMessages(false)} />
-                    </div>
+                    <MessagesPopover open={showMessages} onClose={() => setShowMessages(false)} />
                   )}
                 </div>
 
